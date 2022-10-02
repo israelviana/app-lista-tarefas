@@ -1,4 +1,5 @@
 import 'package:app_lista_tarefas/models/Tarefa.dart';
+import 'package:app_lista_tarefas/repositories/listaTarefasRepositorio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -17,8 +18,23 @@ class _ListaTarefasState extends State<ListaTarefas> {
   List<Tarefa> tarefas = [];
 
   final TextEditingController tarefasController = TextEditingController();
+  final listaTarefasRepositorio tarefasRepositorio = listaTarefasRepositorio();
+
   Tarefa? tarefaDeletada;
   int? posicaoDaTarefa;
+
+  String? erroText;
+
+  @override
+  void initState() {
+    super.initState();
+
+    listaTarefasRepositorio().getListaTarefas().then((value) {
+      setState(() {
+        tarefas = value;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,8 +52,19 @@ class _ListaTarefasState extends State<ListaTarefas> {
                       child: TextField(
                         decoration: InputDecoration(
                             border: OutlineInputBorder(),
+                            errorText: erroText,
                             labelText: "Adicione uma Tarefa",
-                            hintText: "Estude uma tarefa"),
+                            hintText: "Estude uma tarefa",
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: Color(0xffC8B05F),
+                                width: 2
+                              )
+                            ),
+                          labelStyle: TextStyle(
+                            color: Color(0xffC8B05F)
+                          )
+                        ),
                             controller: tarefasController,
                       ),
                     ),
@@ -45,14 +72,23 @@ class _ListaTarefasState extends State<ListaTarefas> {
                     ElevatedButton(
                       onPressed: () {
                         String tarefa = tarefasController.text;
+                        if(tarefa.isEmpty){
+                           setState((){
+                             erroText = "Nenhuma tarefa inserida!";
+                           });
+                           return;
+                        }
+
                         setState((){
                           Tarefa newTarefa = Tarefa(
                               title: tarefa,
                               dateTime: DateTime.now(),
                           );
                           tarefas.add(newTarefa);
+                          erroText = null;
                         });
                         tarefasController.clear();
+                        tarefasRepositorio.salvarListaTarefas(tarefas);
                       },
                       child: Icon(
                         Icons.add,
@@ -114,6 +150,7 @@ class _ListaTarefasState extends State<ListaTarefas> {
     setState((){
       tarefas.remove(tarefa);
     });
+    tarefasRepositorio.salvarListaTarefas(tarefas);
 
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -130,6 +167,7 @@ class _ListaTarefasState extends State<ListaTarefas> {
                 setState((){
                   tarefas.insert(posicaoDaTarefa!, tarefaDeletada!);
                 });
+                tarefasRepositorio.salvarListaTarefas(tarefas);
               }
           ),
         duration: Duration(seconds: 5),
@@ -228,6 +266,7 @@ class _ListaTarefasState extends State<ListaTarefas> {
     setState((){
       tarefas.clear();
     });
+    tarefasRepositorio.salvarListaTarefas(tarefas);
   }
 
 }
